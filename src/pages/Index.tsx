@@ -1,46 +1,18 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { CreateBoardModal } from "@/components/CreateBoardModal";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Board, ThemeType } from "@/types/board";
 import { Plus, FolderKanban, Calendar, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
-import { db } from "@/firebase";
-import { saveBoard } from "@/firebaseMagic";
 
 export default function Index() {
   const navigate = useNavigate();
-  const [boards, setBoards] = useState<Board[]>([]);
+  const [boards, setBoards] = useLocalStorage<Board[]>("storyflow-boards", []);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
 
-  // Load all boards from Firebase
-  useEffect(() => {
-    loadBoards();
-  }, []);
-
-  const loadBoards = async () => {
-    try {
-      const querySnapshot = await getDocs(collection(db, "boards"));
-      const loadedBoards: Board[] = [];
-      querySnapshot.forEach((doc) => {
-        loadedBoards.push(doc.data() as Board);
-      });
-      // Sort by updated date (most recent first)
-      loadedBoards.sort((a, b) => 
-        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-      );
-      setBoards(loadedBoards);
-    } catch (error) {
-      console.error("Error loading boards:", error);
-      toast.error("Failed to load boards");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const createBoard = async (title: string, theme: ThemeType) => {
+  const createBoard = (title: string, theme: ThemeType) => {
     const newBoard: Board = {
       id: Date.now().toString(),
       title,
@@ -50,28 +22,16 @@ export default function Index() {
       sections: [],
     };
 
-    try {
-      await saveBoard(newBoard.id, newBoard);
-      setBoards([newBoard, ...boards]);
-      toast.success("Board created successfully!");
-      navigate(`/board/${newBoard.id}`);
-    } catch (error) {
-      console.error("Error creating board:", error);
-      toast.error("Failed to create board");
-    }
+    setBoards([...boards, newBoard]);
+    toast.success("Board created successfully!");
+    navigate(`/board/${newBoard.id}`);
   };
 
-  const deleteBoard = async (id: string, e: React.MouseEvent) => {
+  const deleteBoard = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm("Are you sure you want to delete this board?")) return;
-
-    try {
-      await deleteDoc(doc(db, "boards", id));
+    if (confirm("Are you sure you want to delete this board?")) {
       setBoards(boards.filter((b) => b.id !== id));
       toast.success("Board deleted");
-    } catch (error) {
-      console.error("Error deleting board:", error);
-      toast.error("Failed to delete board");
     }
   };
 
@@ -79,17 +39,6 @@ export default function Index() {
     const date = new Date(dateString);
     return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
   };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading boards...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background">

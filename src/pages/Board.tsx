@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Board as BoardType, Section } from "@/types/board";
 import { BubbleNavigation } from "@/components/BubbleNavigation";
 import { SectionView } from "@/components/SectionView";
@@ -21,72 +20,56 @@ import {
 export default function Board() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [boards, setBoards] = useLocalStorage<BoardType[]>("storyflow-boards", []);
   const [board, setBoard] = useState<BoardType | null>(null);
   const [navigationPath, setNavigationPath] = useState<Section[]>([]);
   const [currentSections, setCurrentSections] = useState<Section[]>([]);
   const [selectedSection, setSelectedSection] = useState<Section | null>(null);
   const [showCollabDialog, setShowCollabDialog] = useState(false);
-  const [isSynced, setIsSynced] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // 🧭 Load board from localStorage
-  useEffect(() => {
-    const currentBoard = boards.find((b) => b.id === id);
-    if (currentBoard) {
-      setBoard(currentBoard);
-      setCurrentSections(currentBoard.sections);
-      document.documentElement.setAttribute("data-theme", currentBoard.theme);
-    } else {
-      toast.error("Board not found");
-      navigate("/");
-    }
-
-    return () => {
-      document.documentElement.removeAttribute("data-theme");
-    };
-  }, [id, boards, navigate]);
-
-  // 🔄 Firebase Sync (Load + Listen + Auto-save)
+  // 🔥 Load board from Firebase ONLY
   useEffect(() => {
     if (!id) return;
 
-    // 1️⃣ Load existing board from Firebase (if any)
+    // 1️⃣ Load existing board from Firebase
     getBoardData(id).then((firebaseBoard) => {
       if (firebaseBoard) {
         setBoard(firebaseBoard);
-        setIsSynced(true);
-      } else if (board) {
-        // If Firebase is empty but we have a local board, save it
-        saveBoard(id, board);
-        setIsSynced(true);
+        setCurrentSections(firebaseBoard.sections);
+        document.documentElement.setAttribute("data-theme", firebaseBoard.theme);
+      } else {
+        toast.error("Board not found");
+        navigate("/");
       }
+      setIsLoading(false);
     });
 
     // 2️⃣ Listen for live updates from other users
     const unsub = listenBoard(id, (firebaseBoard) => {
-      if (firebaseBoard) setBoard(firebaseBoard);
+      if (firebaseBoard) {
+        setBoard(firebaseBoard);
+        // Update current sections if we're at the root level
+        if (navigationPath.length === 0) {
+          setCurrentSections(firebaseBoard.sections);
+        }
+      }
     });
 
-    // 3️⃣ Cleanup listener
-    return () => unsub();
-  }, [id]);
-
-  // 4️⃣ Auto-save changes to Firebase
-  useEffect(() => {
-    if (!isSynced || !id || !board) return;
-    saveBoard(id, { ...board, updatedAt: new Date().toISOString() });
-  }, [board, isSynced, id]);
+    // 3️⃣ Cleanup
+    return () => {
+      unsub();
+      document.documentElement.removeAttribute("data-theme");
+    };
+  }, [id, navigate]);
 
   // 🧱 Board Update Helper
   const updateBoard = (updatedBoard: BoardType) => {
-    const updatedBoards = boards.map((b) =>
-      b.id === updatedBoard.id
-        ? { ...updatedBoard, updatedAt: new Date().toISOString() }
-        : b
-    );
-    setBoards(updatedBoards);
-    setBoard(updatedBoard);
-    saveBoard(updatedBoard.id, updatedBoard); // Save to Firebase
+    const boardWithTimestamp = {
+      ...updatedBoard,
+      updatedAt: new Date().toISOString(),
+    };
+    setBoard(boardWithTimestamp);
+    saveBoard(updatedBoard.id, boardWithTimestamp); // Save to Firebase
   };
 
   // 🔍 Utility functions
@@ -210,18 +193,21 @@ export default function Board() {
     toast.success("Board exported");
   };
 
-  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       try {
         const importedBoard = JSON.parse(event.target?.result as string) as BoardType;
-        importedBoard.id = Date.now().toString();
+        const newId = Date.now().toString();
+        importedBoard.id = newId;
         importedBoard.updatedAt = new Date().toISOString();
-        setBoards([...boards, importedBoard]);
+        
+        // Save to Firebase
+        await saveBoard(newId, importedBoard);
         toast.success("Board imported successfully");
-        navigate(`/board/${importedBoard.id}`);
+        navigate(`/board/${newId}`);
       } catch {
         toast.error("Invalid board file");
       }
@@ -229,6 +215,24 @@ export default function Board() {
     reader.readAsText(file);
     e.target.value = "";
   };
+
+  const handleCopyLink = () => {
+    if (!id) return;
+    const url = `${window.location.origin}/board/${id}`;
+    navigator.clipboard.writeText(url);
+    toast.success("Link copied to clipboard!");
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading board...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!board) return null;
 
@@ -252,9 +256,9 @@ export default function Board() {
           </div>
 
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setShowCollabDialog(true)}>
+            <Button variant="outline" size="sm" onClick={handleCopyLink}>
               <Users className="mr-2 h-4 w-4" />
-              Invite
+              Copy Link
             </Button>
             <Button variant="outline" size="sm" onClick={handleExport}>
               <Download className="mr-2 h-4 w-4" />
@@ -298,17 +302,24 @@ export default function Board() {
       <Dialog open={showCollabDialog} onOpenChange={setShowCollabDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Invite Collaborators</DialogTitle>
+            <DialogTitle>Share Board</DialogTitle>
             <DialogDescription>
-              Collaboration features are coming soon in the premium version!
+              Copy the link below and share it with anyone!
             </DialogDescription>
           </DialogHeader>
-          <div className="py-6 text-center">
-            <Users className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">
-              Share your boards with team members, assign tasks, and collaborate in real-time.
+          <div className="py-4">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                readOnly
+                value={`${window.location.origin}/board/${id}`}
+                className="flex-1 px-3 py-2 border rounded-md bg-muted text-sm"
+              />
+              <Button onClick={handleCopyLink}>Copy</Button>
+            </div>
+            <p className="text-sm text-muted-foreground mt-4">
+              Anyone with this link can view and edit the board in real-time.
             </p>
-            <p className="text-sm text-muted-foreground mt-2">Stay tuned for updates!</p>
           </div>
         </DialogContent>
       </Dialog>

@@ -31,7 +31,7 @@ export default function Board() {
   useEffect(() => {
     if (!id) return;
 
-    // 1️⃣ Load existing board from Firebase
+    // Load existing board from Firebase (ONE TIME - no real-time listener to save quota)
     getBoardData(id).then((firebaseBoard) => {
       if (firebaseBoard) {
         setBoard(firebaseBoard);
@@ -44,20 +44,8 @@ export default function Board() {
       setIsLoading(false);
     });
 
-    // 2️⃣ Listen for live updates from other users
-    const unsub = listenBoard(id, (firebaseBoard) => {
-      if (firebaseBoard) {
-        setBoard(firebaseBoard);
-        // Update current sections if we're at the root level
-        if (navigationPath.length === 0) {
-          setCurrentSections(firebaseBoard.sections);
-        }
-      }
-    });
-
-    // 3️⃣ Cleanup
+    // Cleanup
     return () => {
-      unsub();
       document.documentElement.removeAttribute("data-theme");
     };
   }, [id, navigate]);

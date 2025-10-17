@@ -5,70 +5,70 @@ import { CreateBoardModal } from "@/components/CreateBoardModal";
 import { Board, ThemeType } from "@/types/board";
 import { Plus, FolderKanban, Calendar, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { collection, addDoc, getDocs, deleteDoc, doc, query, orderBy } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
+import { db } from "./firebase";
+import { saveBoard } from "./firebaseMagic";
 
 export default function Index() {
   const navigate = useNavigate();
   const [boards, setBoards] = useState<Board[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch boards from Firebase on component mount
+  // Load all boards from Firebase
   useEffect(() => {
-    fetchBoards();
+    loadBoards();
   }, []);
 
-  const fetchBoards = async () => {
+  const loadBoards = async () => {
     try {
-      setLoading(true);
-      const boardsRef = collection(db, "boards");
-      const q = query(boardsRef, orderBy("updatedAt", "desc"));
-      const querySnapshot = await getDocs(q);
-      
-      const fetchedBoards: Board[] = [];
+      const querySnapshot = await getDocs(collection(db, "boards"));
+      const loadedBoards: Board[] = [];
       querySnapshot.forEach((doc) => {
-        fetchedBoards.push({ id: doc.id, ...doc.data() } as Board);
+        loadedBoards.push(doc.data() as Board);
       });
-      
-      setBoards(fetchedBoards);
+      // Sort by updated date (most recent first)
+      loadedBoards.sort((a, b) => 
+        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      );
+      setBoards(loadedBoards);
     } catch (error) {
-      console.error("Error fetching boards:", error);
+      console.error("Error loading boards:", error);
       toast.error("Failed to load boards");
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   const createBoard = async (title: string, theme: ThemeType) => {
-    try {
-      const newBoard = {
-        title,
-        theme,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        sections: [],
-      };
+    console.log("Creating board:", title, theme); // Debug log
+    
+    const newBoard: Board = {
+      id: Date.now().toString(),
+      title,
+      theme,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      sections: [],
+    };
 
-      const docRef = await addDoc(collection(db, "boards"), newBoard);
-      
-      const boardWithId = { id: docRef.id, ...newBoard };
-      setBoards([boardWithId, ...boards]);
-      
+    try {
+      console.log("Saving to Firebase..."); // Debug log
+      await saveBoard(newBoard.id, newBoard);
+      console.log("Board saved successfully!"); // Debug log
+      setBoards([newBoard, ...boards]);
       toast.success("Board created successfully!");
-      navigate(`/board/${docRef.id}`);
+      setShowCreateModal(false); // Close modal
+      navigate(`/board/${newBoard.id}`);
     } catch (error) {
       console.error("Error creating board:", error);
-      toast.error("Failed to create board");
+      toast.error("Failed to create board: " + (error as Error).message);
     }
   };
 
   const deleteBoard = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    
-    if (!confirm("Are you sure you want to delete this board?")) {
-      return;
-    }
+    if (!confirm("Are you sure you want to delete this board?")) return;
 
     try {
       await deleteDoc(doc(db, "boards", id));
@@ -84,6 +84,17 @@ export default function Index() {
     const date = new Date(dateString);
     return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading boards...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -108,7 +119,6 @@ export default function Index() {
             size="lg"
             onClick={() => setShowCreateModal(true)}
             className="h-14 px-8 text-lg shadow-medium hover:shadow-elevated transition-all"
-            disabled={loading}
           >
             <Plus className="mr-2 h-5 w-5" />
             Create New Board
@@ -116,14 +126,7 @@ export default function Index() {
         </div>
 
         {/* Boards Grid */}
-        {loading ? (
-          <div className="text-center py-20">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 mb-6">
-              <FolderKanban className="h-10 w-10 text-primary animate-pulse" />
-            </div>
-            <p className="text-muted-foreground">Loading boards...</p>
-          </div>
-        ) : boards.length > 0 ? (
+        {boards.length > 0 ? (
           <div>
             <h2 className="text-2xl font-semibold mb-6 flex items-center gap-2">
               <Calendar className="h-6 w-6 text-primary" />
@@ -156,7 +159,7 @@ export default function Index() {
 
                   <div className="text-sm text-muted-foreground">
                     <div className="flex items-center justify-between">
-                      <span>{board.sections?.length || 0} sections</span>
+                      <span>{board.sections.length} sections</span>
                       <span>{formatDate(board.updatedAt)}</span>
                     </div>
                   </div>

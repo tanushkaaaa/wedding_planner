@@ -1,0 +1,235 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Base colors - Soft Pastel Theme (Default) */
+    --background: 280 20% 98%;
+    --foreground: 280 10% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 280 10% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 280 10% 15%;
+
+    --primary: 280 60% 65%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 200 40% 92%;
+    --secondary-foreground: 280 10% 15%;
+
+    --muted: 280 20% 95%;
+    --muted-foreground: 280 10% 45%;
+
+    --accent: 320 50% 88%;
+    --accent-foreground: 280 10% 15%;
+
+    --destructive: 0 70% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 280 20% 90%;
+    --input: 280 20% 90%;
+    --ring: 280 60% 65%;
+
+    --radius: 0.75rem;
+
+    /* Shadows and effects */
+    --shadow-soft: 0 2px 8px -2px hsl(280 20% 50% / 0.08);
+    --shadow-medium: 0 4px 16px -4px hsl(280 20% 50% / 0.12);
+    --shadow-elevated: 0 8px 24px -6px hsl(280 20% 50% / 0.16);
+
+    /* Sidebar colors */
+    --sidebar-background: 280 25% 97%;
+    --sidebar-foreground: 280 10% 20%;
+    --sidebar-primary: 280 60% 65%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 280 20% 93%;
+    --sidebar-accent-foreground: 280 10% 20%;
+    --sidebar-border: 280 20% 88%;
+    --sidebar-ring: 280 60% 65%;
+
+    /* Transitions */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+
+  /* Dark Theme */
+  [data-theme="dark"] {
+    --background: 240 15% 8%;
+    --foreground: 240 10% 95%;
+    --card: 240 15% 12%;
+    --card-foreground: 240 10% 95%;
+    --popover: 240 15% 12%;
+    --popover-foreground: 240 10% 95%;
+    --primary: 260 70% 70%;
+    --primary-foreground: 240 15% 8%;
+    --secondary: 240 15% 18%;
+    --secondary-foreground: 240 10% 95%;
+    --muted: 240 15% 15%;
+    --muted-foreground: 240 10% 60%;
+    --accent: 280 60% 25%;
+    --accent-foreground: 240 10% 95%;
+    --destructive: 0 70% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 15% 20%;
+    --input: 240 15% 20%;
+    --ring: 260 70% 70%;
+    --sidebar-background: 240 15% 10%;
+    --sidebar-foreground: 240 10% 90%;
+    --sidebar-primary: 260 70% 70%;
+    --sidebar-primary-foreground: 240 15% 8%;
+    --sidebar-accent: 240 15% 16%;
+    --sidebar-accent-foreground: 240 10% 90%;
+    --sidebar-border: 240 15% 18%;
+    --sidebar-ring: 260 70% 70%;
+  }
+
+  /* Elegant Theme */
+  [data-theme="elegant"] {
+    --background: 45 25% 97%;
+    --foreground: 45 15% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 45 15% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 45 15% 10%;
+    --primary: 30 45% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 45 20% 90%;
+    --secondary-foreground: 45 15% 10%;
+    --muted: 45 25% 94%;
+    --muted-foreground: 45 10% 40%;
+    --accent: 25 50% 85%;
+    --accent-foreground: 45 15% 10%;
+    --destructive: 0 70% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 45 20% 88%;
+    --input: 45 20% 88%;
+    --ring: 30 45% 55%;
+    --sidebar-background: 45 30% 96%;
+    --sidebar-foreground: 45 15% 15%;
+    --sidebar-primary: 30 45% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 45 25% 92%;
+    --sidebar-accent-foreground: 45 15% 15%;
+    --sidebar-border: 45 20% 86%;
+    --sidebar-ring: 30 45% 55%;
+  }
+
+  /* Playful Theme */
+  [data-theme="playful"] {
+    --background: 180 40% 96%;
+    --foreground: 200 20% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 200 20% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 200 20% 10%;
+    --primary: 340 75% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 160 45% 88%;
+    --secondary-foreground: 200 20% 10%;
+    --muted: 180 35% 93%;
+    --muted-foreground: 200 15% 40%;
+    --accent: 50 90% 75%;
+    --accent-foreground: 200 20% 10%;
+    --destructive: 0 70% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 180 30% 88%;
+    --input: 180 30% 88%;
+    --ring: 340 75% 60%;
+    --sidebar-background: 180 45% 95%;
+    --sidebar-foreground: 200 20% 15%;
+    --sidebar-primary: 340 75% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 180 40% 90%;
+    --sidebar-accent-foreground: 200 20% 15%;
+    --sidebar-border: 180 35% 86%;
+    --sidebar-ring: 340 75% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground transition-colors duration-300;
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Custom animations */
+  @keyframes slide-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slide-in-right {
+    from {
+      opacity: 0;
+      transform: translateX(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .animate-slide-in-up {
+    animation: slide-in-up 0.3s ease-out;
+  }
+
+  .animate-slide-in-right {
+    animation: slide-in-right 0.3s ease-out;
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.2s ease-out;
+  }
+
+  /* Soft shadows */
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+
+  .shadow-medium {
+    box-shadow: var(--shadow-medium);
+  }
+
+  .shadow-elevated {
+    box-shadow: var(--shadow-elevated);
+  }
+
+  /* Transitions */
+  .transition-smooth {
+    transition: var(--transition-smooth);
+  }
+
+  .transition-bounce {
+    transition: var(--transition-bounce);
+  }
+}

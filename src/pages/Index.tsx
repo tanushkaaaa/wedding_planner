@@ -6,8 +6,8 @@ import { Board, ThemeType } from "@/types/board";
 import { Plus, FolderKanban, Calendar, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
-import { db } from "./firebase";
-import { saveBoard } from "./firebaseMagic";
+import { db } from "../firebase";
+import { saveBoard } from "../firebaseMagic";
 
 export default function Index() {
   const navigate = useNavigate();
